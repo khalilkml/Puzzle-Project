@@ -1,26 +1,40 @@
 # Block Puzzle
 
-Simple addictive 2D block puzzle (Block Blast–style) built with Flutter.
+Simple addictive 2D block puzzle (Block Blast-style) built with Flutter widgets + Provider. Game rules stay in pure Dart.
 
-## Features (Milestones 1–3)
+## Features
 
-- Pure Dart 8×8 board engine with shape catalog, placement, line clears, and game-over detection
-- Provider-based `GameController` with score, best score, combo multipliers, and a 3-piece tray
-- Local high-score persistence via `shared_preferences`
-- Dark mobile UI with scoreboard, draggable shapes, hover preview, and reserved AdMob banner slot
+- 8x8 engine with shape catalog, placement, line clears, combos, and game-over detection
+- 3-piece tray, local high score, dark drag-and-drop UI
+- Sounds + haptics on place, clear, combo, invalid drop, revive, and game over
+- AdMob: reserved banner, interstitial every 2 game overs, rewarded Revive
+- Clear bursts, combo banner, placement pop, score-based shape weighting
 
 ## Run
 
 ```bash
-cd block_puzzle
 flutter pub get
 flutter run
+```
+
+Use Google test ads by default. For release, replace the AdMob App IDs in:
+
+- `android/app/src/main/AndroidManifest.xml`
+- `ios/Runner/Info.plist`
+
+and pass production unit IDs:
+
+```bash
+flutter run --release \
+  --dart-define=USE_TEST_ADS=false \
+  --dart-define=ADMOB_ANDROID_BANNER=ca-app-pub-xxxx/yyyy \
+  --dart-define=ADMOB_ANDROID_INTERSTITIAL=ca-app-pub-xxxx/yyyy \
+  --dart-define=ADMOB_ANDROID_REWARDED=ca-app-pub-xxxx/yyyy
 ```
 
 ## Test
 
 ```bash
-cd block_puzzle
 flutter test
 ```
 
@@ -31,6 +45,11 @@ lib/
   game/board.dart
   state/game_controller.dart
   services/score_storage.dart
-  ui/game_screen.dart
+  services/feedback_service.dart
+  ads/
+  ui/
   main.dart
+store/
+  listing.md
+  privacy.md
 ```

@@ -5,22 +5,22 @@ class Shape {
   final int colorId;
   final List<Point<int>> cells;
 
-  const Shape({
-    required this.id,
-    required this.colorId,
-    required this.cells,
-  });
+  const Shape({required this.id, required this.colorId, required this.cells});
 
   int get blockCount => cells.length;
 
   int get width {
     if (cells.isEmpty) return 0;
-    return cells.map((c) => c.x).reduce(max) - cells.map((c) => c.x).reduce(min) + 1;
+    return cells.map((c) => c.x).reduce(max) -
+        cells.map((c) => c.x).reduce(min) +
+        1;
   }
 
   int get height {
     if (cells.isEmpty) return 0;
-    return cells.map((c) => c.y).reduce(max) - cells.map((c) => c.y).reduce(min) + 1;
+    return cells.map((c) => c.y).reduce(max) -
+        cells.map((c) => c.y).reduce(min) +
+        1;
   }
 
   Shape copyWith({String? id, int? colorId, List<Point<int>>? cells}) {
@@ -37,8 +37,16 @@ class ShapeCatalog {
     Shape(id: 'mono', colorId: 1, cells: [Point(0, 0)]),
     Shape(id: 'domino_h', colorId: 2, cells: [Point(0, 0), Point(1, 0)]),
     Shape(id: 'domino_v', colorId: 2, cells: [Point(0, 0), Point(0, 1)]),
-    Shape(id: 'tri_h', colorId: 3, cells: [Point(0, 0), Point(1, 0), Point(2, 0)]),
-    Shape(id: 'tri_v', colorId: 3, cells: [Point(0, 0), Point(0, 1), Point(0, 2)]),
+    Shape(
+      id: 'tri_h',
+      colorId: 3,
+      cells: [Point(0, 0), Point(1, 0), Point(2, 0)],
+    ),
+    Shape(
+      id: 'tri_v',
+      colorId: 3,
+      cells: [Point(0, 0), Point(0, 1), Point(0, 2)],
+    ),
     Shape(
       id: 'line4_h',
       colorId: 4,
@@ -126,26 +134,50 @@ class ShapeCatalog {
     ),
   ];
 
-  static Shape random(Random rng) {
-    final base = all[rng.nextInt(all.length)];
-    return base.copyWith(colorId: 1 + rng.nextInt(13));
+  static Shape random(Random rng, {int score = 0}) {
+    final difficulty = (score / 600).clamp(0.0, 1.0);
+    final weights =
+        all.map((shape) {
+          final size = shape.blockCount.toDouble();
+          final easy = 8.0 / size;
+          final hard = size;
+          return easy * (1 - difficulty) + hard * difficulty;
+        }).toList();
+    final total = weights.fold<double>(0, (sum, weight) => sum + weight);
+    var pick = rng.nextDouble() * total;
+    for (var i = 0; i < all.length; i++) {
+      pick -= weights[i];
+      if (pick <= 0) {
+        return all[i].copyWith(colorId: 1 + rng.nextInt(13));
+      }
+    }
+    return all.last.copyWith(colorId: 1 + rng.nextInt(13));
   }
 
-  static List<Shape> deal(Random rng, [int count = 3]) {
-    return List.generate(count, (_) => random(rng));
+  static List<Shape> deal(Random rng, {int count = 3, int score = 0}) {
+    return List.generate(count, (_) => random(rng, score: score));
   }
+}
+
+class ClearedCell {
+  final Point<int> at;
+  final int colorId;
+
+  const ClearedCell({required this.at, required this.colorId});
 }
 
 class ClearResult {
   final int rowsCleared;
   final int colsCleared;
-  final int cellsCleared;
+  final List<ClearedCell> cells;
 
   const ClearResult({
     required this.rowsCleared,
     required this.colsCleared,
-    required this.cellsCleared,
+    this.cells = const [],
   });
+
+  int get cellsCleared => cells.length;
 
   int get linesCleared => rowsCleared + colsCleared;
 
@@ -158,16 +190,11 @@ class Board {
   final List<List<int?>> cells;
 
   Board({List<List<int?>>? cells})
-      : cells = cells ??
-            List.generate(size, (_) => List<int?>.filled(size, null));
+    : cells =
+          cells ?? List.generate(size, (_) => List<int?>.filled(size, null));
 
   Board copy() {
-    return Board(
-      cells: List.generate(
-        size,
-        (r) => List<int?>.from(cells[r]),
-      ),
-    );
+    return Board(cells: List.generate(size, (r) => List<int?>.from(cells[r])));
   }
 
   bool isInside(int row, int col) {
@@ -213,30 +240,82 @@ class Board {
       if (full) fullCols.add(c);
     }
 
-    if (fullRows.isEmpty && fullCols.isEmpty) {
-      return const ClearResult(rowsCleared: 0, colsCleared: 0, cellsCleared: 0);
+    return _clearRowsAndCols(fullRows, fullCols);
+  }
+
+  ClearResult clearFullestLines({int count = 2}) {
+    final lines = <_LineFill>[];
+
+    for (var r = 0; r < size; r++) {
+      final fill = cells[r].where((cell) => cell != null).length;
+      if (fill > 0) {
+        lines.add(_LineFill(isRow: true, index: r, fill: fill));
+      }
     }
 
-    final cleared = <Point<int>>{};
+    for (var c = 0; c < size; c++) {
+      var fill = 0;
+      for (var r = 0; r < size; r++) {
+        if (cells[r][c] != null) fill++;
+      }
+      if (fill > 0) {
+        lines.add(_LineFill(isRow: false, index: c, fill: fill));
+      }
+    }
+
+    lines.sort((a, b) {
+      final byFill = b.fill.compareTo(a.fill);
+      if (byFill != 0) return byFill;
+      if (a.isRow != b.isRow) return a.isRow ? -1 : 1;
+      return a.index.compareTo(b.index);
+    });
+
+    final chosen = lines.take(count);
+    final rows = [
+      for (final line in chosen)
+        if (line.isRow) line.index,
+    ];
+    final cols = [
+      for (final line in chosen)
+        if (!line.isRow) line.index,
+    ];
+    return _clearRowsAndCols(rows, cols);
+  }
+
+  ClearResult _clearRowsAndCols(List<int> fullRows, List<int> fullCols) {
+    if (fullRows.isEmpty && fullCols.isEmpty) {
+      return const ClearResult(rowsCleared: 0, colsCleared: 0);
+    }
+
+    final cleared = <Point<int>, int>{};
     for (final r in fullRows) {
       for (var c = 0; c < size; c++) {
-        cleared.add(Point(c, r));
+        final color = cells[r][c];
+        if (color != null) {
+          cleared[Point(c, r)] = color;
+        }
       }
     }
     for (final c in fullCols) {
       for (var r = 0; r < size; r++) {
-        cleared.add(Point(c, r));
+        final color = cells[r][c];
+        if (color != null) {
+          cleared[Point(c, r)] = color;
+        }
       }
     }
 
-    for (final point in cleared) {
+    for (final point in cleared.keys) {
       cells[point.y][point.x] = null;
     }
 
     return ClearResult(
       rowsCleared: fullRows.length,
       colsCleared: fullCols.length,
-      cellsCleared: cleared.length,
+      cells: [
+        for (final entry in cleared.entries)
+          ClearedCell(at: entry.key, colorId: entry.value),
+      ],
     );
   }
 
@@ -264,4 +343,16 @@ class Board {
     }
     return count;
   }
+}
+
+class _LineFill {
+  final bool isRow;
+  final int index;
+  final int fill;
+
+  const _LineFill({
+    required this.isRow,
+    required this.index,
+    required this.fill,
+  });
 }

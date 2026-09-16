@@ -59,5 +59,29 @@ void main() {
       expect(board.isGameOver([mono, null, null]), isFalse);
       expect(board.isGameOver([square, null, null]), isTrue);
     });
+
+    test('clears the fullest lines for revive', () {
+      final board = Board();
+      for (var c = 0; c < Board.size; c++) {
+        board.cells[0][c] = 1;
+        board.cells[3][c] = 2;
+      }
+      board.cells[1][0] = 3;
+      board.cells[2][0] = 3;
+
+      final result = board.clearFullestLines(count: 2);
+      expect(result.rowsCleared, 2);
+      expect(board.cells[0].every((cell) => cell == null), isTrue);
+      expect(board.cells[3].every((cell) => cell == null), isTrue);
+      expect(board.cells[1][0], 3);
+    });
+
+    test('weighted deal always returns three shapes', () {
+      final easy = ShapeCatalog.deal(Random(11), score: 0);
+      final hard = ShapeCatalog.deal(Random(11), score: 900);
+      expect(easy, hasLength(3));
+      expect(hard, hasLength(3));
+      expect(easy.every((shape) => shape.blockCount >= 1), isTrue);
+    });
   });
 }

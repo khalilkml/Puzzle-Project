@@ -1,26 +1,17 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_service.dart';
 import '../game/board.dart';
+import '../services/feedback_service.dart';
 import '../state/game_controller.dart';
-
-const Map<int, Color> kBlockColors = {
-  1: Color(0xFF4FC3F7),
-  2: Color(0xFF81C784),
-  3: Color(0xFFFFB74D),
-  4: Color(0xFFE57373),
-  5: Color(0xFFBA68C8),
-  6: Color(0xFF4DB6AC),
-  7: Color(0xFFFF8A65),
-  8: Color(0xFF9575CD),
-  9: Color(0xFF64B5F6),
-  10: Color(0xFFFFD54F),
-  11: Color(0xFFA1887F),
-  12: Color(0xFFF06292),
-  13: Color(0xFF90A4AE),
-};
+import 'block_colors.dart';
+import 'widgets/clear_burst.dart';
+import 'widgets/combo_overlay.dart';
+import 'widgets/game_over_dialog.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -32,23 +23,115 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   final GlobalKey _boardKey = GlobalKey();
   double _cellSize = 36;
+  int _seenEventSeq = 0;
+  bool _gameOverDialogOpen = false;
+  bool _gameOverDialogQueued = false;
+  GameController? _controller;
+
+  static const double _boardPadding = 6;
+  static const double _cellGap = 3;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GameController>().init();
+      if (!mounted) return;
+      unawaited(context.read<GameController>().init());
+      unawaited(context.read<FeedbackService>().init());
     });
   }
 
-  static const double _boardPadding = 6;
-  static const double _cellGap = 3;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = context.read<GameController>();
+    if (!identical(_controller, controller)) {
+      _controller?.removeListener(_onControllerTick);
+      _controller = controller;
+      _controller!.addListener(_onControllerTick);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.removeListener(_onControllerTick);
+    super.dispose();
+  }
+
+  void _onControllerTick() {
+    if (!mounted) return;
+    final controller = context.read<GameController>();
+    if (controller.eventSeq != _seenEventSeq) {
+      _seenEventSeq = controller.eventSeq;
+      unawaited(context.read<FeedbackService>().handle(controller.lastEvent));
+    }
+
+    if (controller.isGameOver &&
+        !_gameOverDialogOpen &&
+        !_gameOverDialogQueued) {
+      _gameOverDialogQueued = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _gameOverDialogQueued = false;
+        if (!mounted) return;
+        final current = context.read<GameController>();
+        if (!current.isGameOver || _gameOverDialogOpen) return;
+        _gameOverDialogOpen = true;
+        unawaited(_openGameOverDialog());
+      });
+    } else if (!controller.isGameOver && _gameOverDialogOpen) {
+      final nav = Navigator.of(context, rootNavigator: true);
+      if (nav.canPop()) nav.pop();
+    }
+  }
+
+  Future<void> _openGameOverDialog() async {
+    final controller = context.read<GameController>();
+    final ads = context.read<AdService>();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return ListenableBuilder(
+          listenable: Listenable.merge([controller, ads]),
+          builder: (context, _) {
+            return GameOverDialog(
+              score: controller.score,
+              bestScore: controller.bestScore,
+              canRevive: controller.canRevive,
+              rewardedReady: ads.isRewardedReady || !ads.adsSupported,
+              onPlayAgain: () {
+                Navigator.of(dialogContext).pop();
+                final deaths = controller.deathCount;
+                controller.newGame();
+                unawaited(ads.maybeShowInterstitial(deaths));
+              },
+              onRevive: () async {
+                final earned =
+                    ads.adsSupported ? await ads.showRewardedRevive() : true;
+                if (!earned || !dialogContext.mounted) return;
+                controller.revive();
+                Navigator.of(dialogContext).pop();
+              },
+            );
+          },
+        );
+      },
+    );
+    _gameOverDialogOpen = false;
+  }
+
+  Offset _dragLift(Shape shape, double cellSize) {
+    final height = shape.height * cellSize + (shape.height - 1) * _cellGap;
+    return Offset(-cellSize * 0.15, -height - 12);
+  }
 
   Point<int>? _originForPointer(Offset globalPosition, Shape shape) {
     final box = _boardKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return null;
 
-    final local = box.globalToLocal(globalPosition);
+    final local = box.globalToLocal(
+      globalPosition + _dragLift(shape, _cellSize),
+    );
     final stride = _cellSize + _cellGap;
     final col = ((local.dx - _boardPadding) / stride).floor();
     final row = ((local.dy - _boardPadding) / stride).floor();
@@ -58,6 +141,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<GameController>();
+    final ads = context.watch<AdService>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF121418),
@@ -66,20 +150,16 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             const SizedBox(height: 12),
             const _Scoreboard(),
-            if (controller.lastLinesCleared > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  controller.lastCombo > 1
-                      ? 'Combo x${controller.lastCombo}  •  ${controller.lastLinesCleared} lines'
-                      : '${controller.lastLinesCleared} line${controller.lastLinesCleared == 1 ? '' : 's'} cleared',
-                  style: TextStyle(
-                    color: Colors.amber.shade300,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
+            SizedBox(
+              height: 44,
+              child: ComboOverlay(
+                epoch: controller.eventSeq,
+                combo: controller.lastCombo,
+                lines: controller.lastLinesCleared,
+                scoreGain: controller.lastScoreGain,
+                perfect: controller.lastPerfectClear,
               ),
+            ),
             Expanded(
               child: Center(
                 child: LayoutBuilder(
@@ -89,7 +169,9 @@ class _GameScreenState extends State<GameScreen> {
                       constraints.maxHeight - 24,
                     ).clamp(240.0, 420.0);
                     final inner =
-                        boardSide - (_boardPadding * 2) - (_cellGap * (Board.size - 1));
+                        boardSide -
+                        (_boardPadding * 2) -
+                        (_cellGap * (Board.size - 1));
                     _cellSize = inner / Board.size;
 
                     return SizedBox(
@@ -107,8 +189,14 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             _ShapeTray(
-              cellSize: min(_cellSize * 0.72, 28),
-              onDragStarted: (index) => controller.beginDrag(index),
+              trayCellSize: min(_cellSize * 0.72, 28),
+              boardCellSize: _cellSize,
+              boardGap: _cellGap,
+              dragLiftFor: (shape) => _dragLift(shape, _cellSize),
+              onDragStarted: (index) {
+                controller.beginDrag(index);
+                unawaited(context.read<FeedbackService>().dragStarted());
+              },
               onDragUpdate: (index, details) {
                 final shape = controller.tray[index];
                 if (shape == null) return;
@@ -121,8 +209,7 @@ class _GameScreenState extends State<GameScreen> {
               onDragCanceled: () => controller.endDrag(cancelled: true),
             ),
             const SizedBox(height: 12),
-            if (controller.isGameOver) const _GameOverBar(),
-            const _AdBannerSlot(),
+            ads.buildBanner(),
           ],
         ),
       ),
@@ -255,8 +342,19 @@ class _GameBoard extends StatelessWidget {
                   highlighted: controller.canHighlightAt(row, col),
                   hoverValid: controller.isHoverValid,
                   dragColorId: controller.draggingShape?.colorId,
+                  justPlaced: controller.lastPlacedCells.contains(
+                    Point(col, row),
+                  ),
+                  placeEpoch: controller.eventSeq,
                 ),
               ),
+          ClearBurst(
+            cells: controller.lastClearedCells,
+            epoch: controller.eventSeq,
+            cellSize: cellSize,
+            padding: padding,
+            gap: gap,
+          ),
         ],
       ),
     );
@@ -269,12 +367,16 @@ class _BoardCell extends StatelessWidget {
     required this.highlighted,
     required this.hoverValid,
     required this.dragColorId,
+    required this.justPlaced,
+    required this.placeEpoch,
   });
 
   final int? value;
   final bool highlighted;
   final bool hoverValid;
   final int? dragColorId;
+  final bool justPlaced;
+  final int placeEpoch;
 
   @override
   Widget build(BuildContext context) {
@@ -283,42 +385,63 @@ class _BoardCell extends StatelessWidget {
       fill = kBlockColors[value] ?? Colors.blueGrey;
     } else if (highlighted) {
       final base = kBlockColors[dragColorId ?? 1] ?? Colors.lightBlue;
-      fill = hoverValid
-          ? base.withValues(alpha: 0.55)
-          : Colors.redAccent.withValues(alpha: 0.35);
+      fill =
+          hoverValid
+              ? base.withValues(alpha: 0.55)
+              : Colors.redAccent.withValues(alpha: 0.35);
     } else {
       fill = const Color(0xFF2A313A);
     }
 
-    return AnimatedContainer(
+    final cell = AnimatedContainer(
       duration: const Duration(milliseconds: 90),
       decoration: BoxDecoration(
         color: fill,
         borderRadius: BorderRadius.circular(6),
-        boxShadow: value != null
-            ? [
-                BoxShadow(
-                  color: fill.withValues(alpha: 0.35),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : null,
+        boxShadow:
+            value != null
+                ? [
+                  BoxShadow(
+                    color: fill.withValues(alpha: 0.35),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+                : null,
       ),
+    );
+
+    if (!justPlaced || value == null) return cell;
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('place-$placeEpoch'),
+      tween: Tween(begin: 0.72, end: 1),
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: cell,
     );
   }
 }
 
 class _ShapeTray extends StatelessWidget {
   const _ShapeTray({
-    required this.cellSize,
+    required this.trayCellSize,
+    required this.boardCellSize,
+    required this.boardGap,
+    required this.dragLiftFor,
     required this.onDragStarted,
     required this.onDragUpdate,
     required this.onDragEnd,
     required this.onDragCanceled,
   });
 
-  final double cellSize;
+  final double trayCellSize;
+  final double boardCellSize;
+  final double boardGap;
+  final Offset Function(Shape shape) dragLiftFor;
   final ValueChanged<int> onDragStarted;
   final void Function(int index, DragUpdateDetails details) onDragUpdate;
   final void Function(DraggableDetails details) onDragEnd;
@@ -343,17 +466,28 @@ class _ShapeTray extends StatelessWidget {
             final shape = controller.tray[index];
             return Expanded(
               child: Center(
-                child: shape == null
-                    ? const SizedBox.shrink()
-                    : _DraggableShape(
-                        shape: shape,
-                        cellSize: cellSize,
-                        enabled: !controller.isGameOver,
-                        onDragStarted: () => onDragStarted(index),
-                        onDragUpdate: (details) => onDragUpdate(index, details),
-                        onDragEnd: onDragEnd,
-                        onDragCanceled: onDragCanceled,
-                      ),
+                child:
+                    shape == null
+                        ? const SizedBox.shrink()
+                        : Opacity(
+                          opacity:
+                              controller.canPlaceTrayIndex(index) ? 1 : 0.38,
+                          child: _DraggableShape(
+                            shape: shape,
+                            trayCellSize: trayCellSize,
+                            boardCellSize: boardCellSize,
+                            boardGap: boardGap,
+                            dragLift: dragLiftFor(shape),
+                            enabled:
+                                !controller.isGameOver &&
+                                controller.canPlaceTrayIndex(index),
+                            onDragStarted: () => onDragStarted(index),
+                            onDragUpdate:
+                                (details) => onDragUpdate(index, details),
+                            onDragEnd: onDragEnd,
+                            onDragCanceled: onDragCanceled,
+                          ),
+                        ),
               ),
             );
           }),
@@ -366,7 +500,10 @@ class _ShapeTray extends StatelessWidget {
 class _DraggableShape extends StatelessWidget {
   const _DraggableShape({
     required this.shape,
-    required this.cellSize,
+    required this.trayCellSize,
+    required this.boardCellSize,
+    required this.boardGap,
+    required this.dragLift,
     required this.enabled,
     required this.onDragStarted,
     required this.onDragUpdate,
@@ -375,7 +512,10 @@ class _DraggableShape extends StatelessWidget {
   });
 
   final Shape shape;
-  final double cellSize;
+  final double trayCellSize;
+  final double boardCellSize;
+  final double boardGap;
+  final Offset dragLift;
   final bool enabled;
   final VoidCallback onDragStarted;
   final GestureDragUpdateCallback onDragUpdate;
@@ -384,8 +524,7 @@ class _DraggableShape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _ShapePreview(shape: shape, cellSize: cellSize);
-    final feedbackCell = cellSize * 1.25;
+    final preview = _ShapePreview(shape: shape, cellSize: trayCellSize, gap: 2);
 
     return Draggable<Shape>(
       data: shape,
@@ -400,8 +539,12 @@ class _DraggableShape extends StatelessWidget {
         child: Opacity(
           opacity: 0.92,
           child: Transform.translate(
-            offset: Offset(-feedbackCell * 0.35, -feedbackCell * 0.35),
-            child: _ShapePreview(shape: shape, cellSize: feedbackCell),
+            offset: dragLift,
+            child: _ShapePreview(
+              shape: shape,
+              cellSize: boardCellSize,
+              gap: boardGap,
+            ),
           ),
         ),
       ),
@@ -415,109 +558,45 @@ class _ShapePreview extends StatelessWidget {
   const _ShapePreview({
     required this.shape,
     required this.cellSize,
+    this.gap = 2,
   });
 
   final Shape shape;
   final double cellSize;
+  final double gap;
 
   @override
   Widget build(BuildContext context) {
     final color = kBlockColors[shape.colorId] ?? Colors.lightBlue;
-    final width = shape.width * cellSize + (shape.width - 1) * 2;
-    final height = shape.height * cellSize + (shape.height - 1) * 2;
+    final width = shape.width * cellSize + (shape.width - 1) * gap;
+    final height = shape.height * cellSize + (shape.height - 1) * gap;
 
     return SizedBox(
       width: width,
       height: height,
       child: Stack(
-        children: shape.cells.map((cell) {
-          return Positioned(
-            left: cell.x * (cellSize + 2),
-            top: cell.y * (cellSize + 2),
-            child: Container(
-              width: cellSize,
-              height: cellSize,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(5),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+        children:
+            shape.cells.map((cell) {
+              return Positioned(
+                left: cell.x * (cellSize + gap),
+                top: cell.y * (cellSize + gap),
+                child: Container(
+                  width: cellSize,
+                  height: cellSize,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _GameOverBar extends StatelessWidget {
-  const _GameOverBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = context.watch<GameController>();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A1E1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Game Over',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
                 ),
-              ),
-            ),
-            FilledButton(
-              onPressed: controller.newGame,
-              child: const Text('Play Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdBannerSlot extends StatelessWidget {
-  const _AdBannerSlot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C2128),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Text(
-        'Ad Banner Slot',
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.45),
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.6,
-        ),
+              );
+            }).toList(),
       ),
     );
   }
