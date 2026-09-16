@@ -36,7 +36,7 @@ class BlockPuzzleApp extends StatelessWidget {
         Provider<FeedbackService>.value(value: feedback),
       ],
       child: MaterialApp(
-        title: 'Block Puzzle',
+        title: 'Cubex',
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(

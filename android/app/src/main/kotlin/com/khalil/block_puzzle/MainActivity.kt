@@ -1,4 +1,4 @@
-package com.blockpuzzle.block_puzzle
+package com.khalil.block_puzzle
 
 import io.flutter.embedding.android.FlutterActivity
 

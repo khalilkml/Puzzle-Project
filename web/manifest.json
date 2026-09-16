@@ -1,6 +1,6 @@
 {
-    "name": "block_puzzle",
-    "short_name": "block_puzzle",
+    "name": "Cubex",
+    "short_name": "Cubex",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
