@@ -5,11 +5,19 @@ import 'package:provider/provider.dart';
 import 'ads/ad_service.dart';
 import 'services/feedback_service.dart';
 import 'state/game_controller.dart';
-import 'ui/game_screen.dart';
+import 'ui/cubex_theme.dart';
+import 'ui/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
   final ads = AdService();
   await ads.initialize();
   final feedback = FeedbackService();
@@ -33,22 +41,13 @@ class BlockPuzzleApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => GameController()),
         ChangeNotifierProvider<AdService>.value(value: adService),
-        Provider<FeedbackService>.value(value: feedback),
+        ChangeNotifierProvider<FeedbackService>.value(value: feedback),
       ],
       child: MaterialApp(
         title: 'Cubex',
         debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.dark,
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF4FC3F7),
-            brightness: Brightness.dark,
-          ),
-          scaffoldBackgroundColor: const Color(0xFF121418),
-        ),
-        home: const GameScreen(),
+        theme: CubexTheme.light,
+        home: const HomeScreen(),
       ),
     );
   }

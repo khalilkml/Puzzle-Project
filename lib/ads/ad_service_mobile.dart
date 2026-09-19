@@ -35,7 +35,7 @@ class AdService extends ChangeNotifier {
         key: const Key('ad-banner-slot'),
         height: height,
         width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
         alignment: Alignment.center,
         child: AdWidget(ad: _banner!),
       );

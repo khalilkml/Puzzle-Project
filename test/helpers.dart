@@ -11,7 +11,9 @@ Widget wrapGame(GameController controller, {AdService? ads}) {
     providers: [
       ChangeNotifierProvider.value(value: controller),
       ChangeNotifierProvider<AdService>.value(value: ads ?? AdService()),
-      Provider<FeedbackService>.value(value: FeedbackService.silent()),
+      ChangeNotifierProvider<FeedbackService>.value(
+        value: FeedbackService.silent(),
+      ),
     ],
     child: const MaterialApp(home: GameScreen()),
   );

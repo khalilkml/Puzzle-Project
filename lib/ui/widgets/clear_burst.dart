@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../game/board.dart';
 import '../block_colors.dart';
+import '../cubex_theme.dart';
 
 class ClearBurst extends StatefulWidget {
   const ClearBurst({
@@ -33,7 +34,7 @@ class _ClearBurstState extends State<ClearBurst>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 380),
     );
     _t = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     if (widget.cells.isNotEmpty) {
@@ -67,7 +68,7 @@ class _ClearBurstState extends State<ClearBurst>
         return IgnorePointer(
           child: Stack(
             children: [
-              for (final cell in widget.cells)
+              for (final cell in widget.cells) ...[
                 Positioned(
                   left:
                       widget.padding +
@@ -80,18 +81,18 @@ class _ClearBurstState extends State<ClearBurst>
                   child: Opacity(
                     opacity: opacity,
                     child: Transform.scale(
-                      scale: 1 + progress * 0.45,
+                      scale: 1 + progress * 0.55,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: (kBlockColors[cell.colorId] ?? Colors.white)
-                              .withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(6),
+                              .withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withValues(
-                                alpha: 0.35 * opacity,
-                              ),
-                              blurRadius: 10 + progress * 12,
+                              color: const Color(
+                                0xFFFFE082,
+                              ).withValues(alpha: 0.7 * opacity),
+                              blurRadius: 12 + progress * 16,
                             ),
                           ],
                         ),
@@ -99,6 +100,25 @@ class _ClearBurstState extends State<ClearBurst>
                     ),
                   ),
                 ),
+                Positioned(
+                  left:
+                      widget.padding +
+                      cell.at.x * (widget.cellSize + widget.gap) +
+                      widget.cellSize * 0.35,
+                  top:
+                      widget.padding +
+                      cell.at.y * (widget.cellSize + widget.gap) -
+                      progress * 10,
+                  child: Opacity(
+                    opacity: opacity,
+                    child: Icon(
+                      Icons.star_rounded,
+                      size: 10 + progress * 6,
+                      color: CubexTheme.peachDeep.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><title>Cubex</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400..800;1,6..12,400..800&amp;family=Quicksand:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"inverse-surface":"#472912","on-primary-fixed":"#002109","tertiary-fixed":"#c9e6ff","outline":"#6d7b6c","on-secondary":"#ffffff","on-tertiary-fixed":"#001e2f","on-secondary-container":"#5c2400","on-surface-variant":"#3d4a3d","on-surface":"#2e1502","background":"#fff8f5","inverse-primary":"#4ae176","primary-fixed-dim":"#4ae176","surface-container":"#ffeadd","secondary-fixed":"#ffdbca","on-tertiary":"#ffffff","on-primary-fixed-variant":"#005321","outline-variant":"#bccbb9","secondary-container":"#fd761a","secondary-fixed-dim":"#ffb690","surface-container-low":"#fff1e9","tertiary-container":"#36b6fb","surface-bright":"#fff8f5","on-secondary-fixed-variant":"#783200","secondary":"#9d4300","on-background":"#2e1502","error-container":"#ffdad6","on-primary":"#ffffff","surface-tint":"#006e2f","inverse-on-surface":"#ffede3","surface-container-lowest":"#ffffff","primary-container":"#22c55e","surface-container-high":"#ffe3d1","on-tertiary-fixed-variant":"#004c6e","tertiary":"#006591","tertiary-fixed-dim":"#89ceff","surface-container-highest":"#ffdcc5","on-error-container":"#93000a","surface":"#fff8f5","on-primary-container":"#004b1e","primary":"#006e2f","error":"#ba1a1a","on-tertiary-container":"#004564","surface-variant":"#ffdcc5","primary-fixed":"#6bff8f","surface-dim":"#ffd1b2","on-secondary-fixed":"#341100","on-error":"#ffffff"},borderRadius:{DEFAULT:"1rem",lg:"2rem",xl:"3rem",full:"9999px"},spacing:{"space-sm":"0.5rem","gutter-mobile":"0.5rem","space-lg":"1.25rem",margin:"1.5rem",gutter:"1rem","space-md":"0.75rem","margin-mobile":"1rem","space-xs":"0.25rem","space-xl":"2rem"},fontFamily:{"label-sm":["Quicksand"],"headline-lg":["Quicksand"],"display-lg":["Quicksand"],"body-md":["Nunito Sans"],"label-lg":["Quicksand"],"title-lg":["Quicksand"],"display-lg-mobile":["Quicksand"],"headline-sm":["Quicksand"],"headline-md":["Quicksand"],"label-md":["Quicksand"],"body-lg":["Nunito Sans"],"body-sm":["Nunito Sans"]},fontSize:{"label-sm":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"700"}],"headline-lg":["32px",{lineHeight:"40px",fontWeight:"700"}],"display-lg":["48px",{lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"600"}],"label-lg":["16px",{lineHeight:"20px",letterSpacing:"0.02em",fontWeight:"700"}],"title-lg":["18px",{lineHeight:"24px",fontWeight:"700"}],"display-lg-mobile":["36px",{lineHeight:"44px",letterSpacing:"-0.01em",fontWeight:"700"}],"headline-sm":["20px",{lineHeight:"28px",fontWeight:"600"}],"headline-md":["24px",{lineHeight:"32px",fontWeight:"700"}],"label-md":["13px",{lineHeight:"16px",letterSpacing:"0.03em",fontWeight:"700"}],"body-lg":["16px",{lineHeight:"24px",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"16px",fontWeight:"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-secondary-fixed"><main class="flex flex-col relative w-full pt-safe pb-safe bg-surface max-w-[480px] mx-auto min-h-screen"><div class="flex flex-col w-full relative px-margin-mobile overflow-hidden select-none pb-space-lg">
+<!-- Top Minimal Utility Bar -->
+<div class="w-full flex items-center justify-between pt-space-md pb-space-xs z-20">
+<div class="flex items-center gap-space-xs bg-surface-container-high/90 px-space-md py-1.5 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="font-label-sm text-on-surface-variant tracking-wider uppercase">Classic Wood</span>
+</div>
+<!-- Tactile Wooden Settings Button -->
+<button aria-label="Settings" class="relative w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center cursor-pointer transition-transform duration-100 active:translate-y-1 shadow-[0_4px_0_0_#d8b89d,0_6px_8px_rgba(66,40,23,0.18)]" id="settingsBtn">
+<span class="absolute inset-x-1 top-1 h-3 rounded-t-full bg-surface-container-lowest/30 pointer-events-none"></span>
+<span class="material-symbols-outlined text-inverse-surface text-[22px]">settings</span>
+</button>
+</div>
+<!-- Decorative Floating Toy Puzzle Blocks (Sides) -->
+<div class="absolute left-[-8px] top-32 w-12 h-12 rounded-xl bg-secondary-container shadow-[0_5px_0_0_#9d4300,0_8px_12px_rgba(66,40,23,0.22)] rotate-[-14deg] pointer-events-none z-0">
+<div class="w-full h-1/2 rounded-t-xl bg-surface-container-lowest/25"></div>
+</div>
+<div class="absolute -right-2 top-28 w-11 h-11 rounded-xl bg-tertiary-container shadow-[0_5px_0_0_#004564,0_8px_12px_rgba(66,40,23,0.22)] rotate-[18deg] pointer-events-none z-0">
+<div class="w-full h-1/2 rounded-t-xl bg-surface-container-lowest/25"></div>
+</div>
+<div class="absolute -left-3 bottom-44 w-10 h-10 rounded-xl bg-primary-container shadow-[0_4px_0_0_#006e2f,0_6px_10px_rgba(66,40,23,0.2)] rotate-[12deg] pointer-events-none z-0">
+<div class="w-full h-1/2 rounded-t-xl bg-surface-container-lowest/25"></div>
+</div>
+<div class="absolute -right-3 bottom-40 w-12 h-12 rounded-xl bg-[#c054f0] shadow-[0_5px_0_0_#6c1496,0_8px_12px_rgba(66,40,23,0.2)] rotate-[-16deg] pointer-events-none z-0">
+<div class="w-full h-1/2 rounded-t-xl bg-surface-container-lowest/25"></div>
+</div>
+<!-- Center Hero: Cubex 3D Toy Cube Logo -->
+<div class="flex flex-col items-center justify-center pt-space-xs z-10">
+<div class="relative w-60 h-60 flex items-center justify-center">
+<!-- Ambient warm glow under the floating block -->
+<div class="absolute -bottom-2 w-48 h-10 bg-inverse-surface/15 rounded-full blur-md transform scale-y-75 animate-pulse"></div>
+<!-- Primary 3D Cube Illustration -->
+<div class="relative w-56 h-56 transition-transform duration-300 hover:scale-105 active:scale-95 cursor-pointer" id="cubeHero">
+<img alt="Cubex 3D Wooden Toy Puzzle Cube" class="w-full h-full object-contain filter drop-shadow-[0_12px_16px_rgba(66,40,23,0.28)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDalimX_ZftNY3MjDRpwFlIlclNMx9oLfGsulx82o69TJEiCzkk8YOAJzxqn6hx6AC-KvNuzi1bSMowx9yBHal5m19MxtdeLA-uADH5CQK82doWL-TTlYihKsfslZMf7cx3TR84HFzoQpPwqq1h-KOeNdmtSA4DXSyFXOIl-xN-qP5qfZCfSlOQjcAlMgXJPOFK8wqwten2PiQydNaKmGRieSsTESVK9yzHF6bzGGUXXs1Pl-rvrj2hcQ"/>
+</div>
+</div>
+<!-- Playful Carved Title Banner -->
+<div class="relative -mt-2 flex flex-col items-center">
+<div class="flex items-center gap-1.5 px-space-md py-1">
+<span class="font-headline-lg text-primary text-[38px] drop-shadow-[0_3px_0_#004b1e] tracking-tight">C</span>
+<span class="font-headline-lg text-tertiary-container text-[38px] drop-shadow-[0_3px_0_#004564] tracking-tight">U</span>
+<span class="font-headline-lg text-[#facc15] text-[38px] drop-shadow-[0_3px_0_#a16207] tracking-tight">B</span>
+<span class="font-headline-lg text-[#c054f0] text-[38px] drop-shadow-[0_3px_0_#6c1496] tracking-tight">E</span>
+<span class="font-headline-lg text-secondary-container text-[38px] drop-shadow-[0_3px_0_#9d4300] tracking-tight">X</span>
+</div>
+<!-- Tagline Pill Inset Plaque -->
+<div class="mt-0.5 px- space-md py-1 bg-surface-container rounded-full shadow-[inset_0_2px_4px_rgba(66,40,23,0.25)] flex items-center gap-1.5 px-3 py-1">
+<span class="material-symbols-outlined text-secondary text-[16px]" style="font-variation-settings: 'FILL' 1;">extension</span>
+<span class="font-label-md text-on-surface-variant tracking-wide">Wood Block Puzzle</span>
+</div>
+</div>
+</div>
+<!-- Mid Section: Best Score Inlay Plaque -->
+<div class="mt-space-md flex justify-center z-10">
+<div class="w-full max-w-[320px] bg-surface-container rounded-lg p-space-sm shadow-[0_6px_14px_rgba(66,40,23,0.12),inset_0_1px_2px_rgba(255,255,255,0.7)] flex items-center justify-between">
+<div class="flex items-center gap-space-sm pl-space-xs">
+<div class="w-9 h-9 rounded-full bg-[#fde047] flex items-center justify-center shadow-[0_3px_0_0_#ca8a04]">
+<span class="material-symbols-outlined text-[#713f12] text-[20px]" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-on-surface-variant uppercase leading-none">Best Score</span>
+<span class="font-headline-sm text-inverse-surface tracking-tight">3,850</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest/80 px-2.5 py-1 rounded-full shadow-[inset_0_1px_3px_rgba(66,40,23,0.15)] mr-1">
+<span class="material-symbols-outlined text-secondary-container text-[16px]" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-label-md text-on-surface">Lv. 14</span>
+</div>
+</div>
+</div>
+<!-- Primary CTA: Massive Chunky Play Button -->
+<div class="mt-space-lg flex flex-col items-center z-10">
+<button class="group relative w-full max-w-[320px] h-[72px] rounded-full bg-primary-container text-on-primary font-headline-md flex items-center justify-center gap-space-sm cursor-pointer shadow-[0_7px_0_0_#006e2f,0_12px_20px_rgba(0,110,47,0.35)] transition-all duration-100 active:translate-y-1.5 active:shadow-[0_2px_0_0_#006e2f,0_4px_8px_rgba(0,110,47,0.3)]" id="playButton">
+<!-- Specular top-lit glaze -->
+<span class="absolute inset-x-6 top-1 h-5 rounded-full bg-surface-container-lowest/30 pointer-events-none"></span>
+<!-- Inner icon & text -->
+<span class="w-10 h-10 rounded-full bg-surface-container-lowest/20 flex items-center justify-center mr-1">
+<span class="material-symbols-outlined text-on-primary text-[28px] translate-x-0.5" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</span>
+<span class="font-headline-lg tracking-wider text-[26px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">PLAY</span>
+</button>
+</div>
+<!-- Bottom Utility Row: Cute Wooden Pill Buttons -->
+<div class="mt-space-lg flex items-center justify-center gap-space-md z-10">
+<!-- Sound Toggle -->
+<button aria-label="Sound Toggle" class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center cursor-pointer transition-transform duration-100 active:translate-y-1 shadow-[0_4px_0_0_#d8b89d,0_4px_6px_rgba(66,40,23,0.15)]" id="soundToggle">
+<span class="material-symbols-outlined text-inverse-surface text-[22px]" id="soundIcon">volume_up</span>
+</button>
+<!-- Vibration Toggle -->
+<button aria-label="Haptics Toggle" class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center cursor-pointer transition-transform duration-100 active:translate-y-1 shadow-[0_4px_0_0_#d8b89d,0_4px_6px_rgba(66,40,23,0.15)]" id="vibeToggle">
+<span class="material-symbols-outlined text-inverse-surface text-[22px]" id="vibeIcon">vibration</span>
+</button>
+<!-- Leaderboard Shortcut -->
+<button aria-label="Rankings" class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center cursor-pointer transition-transform duration-100 active:translate-y-1 shadow-[0_4px_0_0_#d8b89d,0_4px_6px_rgba(66,40,23,0.15)]" id="rankToggle">
+<span class="material-symbols-outlined text-inverse-surface text-[22px]">leaderboard</span>
+</button>
+</div>
+<!-- Motion Delight Pill Footer -->
+<div class="mt-space-md flex justify-center z-10">
+<div class="px-space-md py-1 bg-surface-container-high/60 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[14px]">auto_awesome</span>
+<span class="font-body-sm text-on-surface-variant text-[11px]">Touch blocks for tactile wooden clack</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Sound effect synthesis for cozy wooden "thud/clack"
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playWoodClack(pitch = 300) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(pitch, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.09);
+      } catch (e) {
+        // Fallback gracefully if audio permissions are denied
+      }
+    }
+
+    // Play Button Interactive Clack & Haptic
+    const playBtn = document.getElementById('playButton');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        playWoodClack(440);
+        if (navigator.vibrate) navigator.vibrate([15, 30, 20]);
+      });
+    }
+
+    // Interactive Cube Hero Bounce
+    const cubeHero = document.getElementById('cubeHero');
+    if (cubeHero) {
+      cubeHero.addEventListener('click', () => {
+        playWoodClack(520);
+        cubeHero.classList.add('scale-110', 'rotate-3');
+        setTimeout(() => {
+          cubeHero.classList.remove('scale-110', 'rotate-3');
+        }, 220);
+      });
+    }
+
+    // Audio / Vibe Toggle Micro-interactions
+    let soundOn = true;
+    const soundToggle = document.getElementById('soundToggle');
+    const soundIcon = document.getElementById('soundIcon');
+    if (soundToggle && soundIcon) {
+      soundToggle.addEventListener('click', () => {
+        soundOn = !soundOn;
+        soundIcon.textContent = soundOn ? 'volume_up' : 'volume_off';
+        if (soundOn) playWoodClack(350);
+      });
+    }
+
+    let vibeOn = true;
+    const vibeToggle = document.getElementById('vibeToggle');
+    const vibeIcon = document.getElementById('vibeIcon');
+    if (vibeToggle && vibeIcon) {
+      vibeToggle.addEventListener('click', () => {
+        vibeOn = !vibeOn;
+        vibeIcon.textContent = vibeOn ? 'vibration' : 'smartphone';
+        if (vibeOn && navigator.vibrate) navigator.vibrate(25);
+        playWoodClack(280);
+      });
+    }
+
+    const rankToggle = document.getElementById('rankToggle');
+    if (rankToggle) {
+      rankToggle.addEventListener('click', () => playWoodClack(380));
+    }
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => playWoodClack(320));
+    }
+  })();
+</script></main></body></html>

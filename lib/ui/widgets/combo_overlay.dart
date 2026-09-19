@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../cubex_theme.dart';
+
 class ComboOverlay extends StatefulWidget {
   const ComboOverlay({
     super.key,
@@ -77,18 +79,17 @@ class _ComboOverlayState extends State<ComboOverlay> {
               style: TextStyle(
                 color:
                     widget.perfect
-                        ? const Color(0xFFFFD54F)
-                        : Colors.amber.shade200,
-                fontWeight: FontWeight.w800,
+                        ? CubexTheme.peachDeep
+                        : const Color(0xFFE65100),
+                fontWeight: FontWeight.w900,
                 fontSize: widget.perfect || widget.combo > 1 ? 22 : 16,
-                letterSpacing: 1.1,
-                shadows: const [Shadow(color: Colors.black54, blurRadius: 12)],
+                letterSpacing: 0.8,
               ),
             ),
             Text(
               '+${widget.scoreGain}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+              style: const TextStyle(
+                color: CubexTheme.woodInk,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),

@@ -1,9 +1,10 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../state/game_controller.dart';
 
-class FeedbackService {
+class FeedbackService extends ChangeNotifier {
   FeedbackService({
     bool soundsEnabled = true,
     bool hapticsEnabled = true,
@@ -16,12 +17,35 @@ class FeedbackService {
     return FeedbackService(soundsEnabled: false, hapticsEnabled: false);
   }
 
-  final bool _soundsEnabled;
-  final bool _hapticsEnabled;
+  bool _soundsEnabled;
+  bool _hapticsEnabled;
   AudioPlayer? _player;
   bool _ready = false;
 
+  bool get soundsEnabled => _soundsEnabled;
+  bool get hapticsEnabled => _hapticsEnabled;
+
   AudioPlayer get _audio => _player ??= AudioPlayer();
+
+  void setSoundsEnabled(bool value) {
+    if (_soundsEnabled == value) return;
+    _soundsEnabled = value;
+    if (value && !_ready) {
+      // ignore: discarded_futures
+      init();
+    }
+    notifyListeners();
+  }
+
+  void toggleSounds() => setSoundsEnabled(!_soundsEnabled);
+
+  void setHapticsEnabled(bool value) {
+    if (_hapticsEnabled == value) return;
+    _hapticsEnabled = value;
+    notifyListeners();
+  }
+
+  void toggleHaptics() => setHapticsEnabled(!_hapticsEnabled);
 
   Future<void> init() async {
     if (!_soundsEnabled || _ready) return;
@@ -81,7 +105,12 @@ class FeedbackService {
     }
   }
 
-  Future<void> dispose() async {
-    await _player?.dispose();
+  @override
+  void dispose() {
+    final player = _player;
+    _player = null;
+    // ignore: discarded_futures
+    player?.dispose();
+    super.dispose();
   }
 }

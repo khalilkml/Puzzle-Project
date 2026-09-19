@@ -50,14 +50,14 @@ void main() {
     controller.debugLoadBoard(full, [square, square, square]);
     await tester.pumpAndSettle();
 
-    expect(find.text('Game Over'), findsOneWidget);
+    expect(find.textContaining('Game Over'), findsOneWidget);
     expect(find.text('Play Again'), findsOneWidget);
     expect(find.text('Watch Ad to Revive'), findsOneWidget);
 
     controller.newGame();
     await tester.pumpAndSettle();
 
-    expect(find.text('Game Over'), findsNothing);
+    expect(find.textContaining('Game Over'), findsNothing);
     expect(controller.isGameOver, isFalse);
     expect(controller.score, 0);
   });

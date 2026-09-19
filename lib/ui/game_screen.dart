@@ -9,9 +9,14 @@ import '../game/board.dart';
 import '../services/feedback_service.dart';
 import '../state/game_controller.dart';
 import 'block_colors.dart';
+import 'cubex_theme.dart';
+import 'drag_placement.dart';
 import 'widgets/clear_burst.dart';
 import 'widgets/combo_overlay.dart';
 import 'widgets/game_over_dialog.dart';
+import 'widgets/idle_wiggle.dart';
+import 'widgets/level_bar.dart';
+import 'widgets/toy_block.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -28,8 +33,8 @@ class _GameScreenState extends State<GameScreen> {
   bool _gameOverDialogQueued = false;
   GameController? _controller;
 
-  static const double _boardPadding = 6;
-  static const double _cellGap = 3;
+  static const double _boardPadding = 10;
+  static const double _cellGap = 5;
 
   @override
   void initState() {
@@ -90,6 +95,7 @@ class _GameScreenState extends State<GameScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
+      barrierColor: const Color(0x99FFF4EC),
       builder: (dialogContext) {
         return ListenableBuilder(
           listenable: Listenable.merge([controller, ads]),
@@ -97,6 +103,7 @@ class _GameScreenState extends State<GameScreen> {
             return GameOverDialog(
               score: controller.score,
               bestScore: controller.bestScore,
+              lastScoreGain: controller.lastScoreGain,
               canRevive: controller.canRevive,
               rewardedReady: ads.isRewardedReady || !ads.adsSupported,
               onPlayAgain: () {
@@ -120,22 +127,30 @@ class _GameScreenState extends State<GameScreen> {
     _gameOverDialogOpen = false;
   }
 
+  /// Lift shared by floating feedback and hover/drop mapping.
   Offset _dragLift(Shape shape, double cellSize) {
-    final height = shape.height * cellSize + (shape.height - 1) * _cellGap;
-    return Offset(-cellSize * 0.15, -height - 12);
+    return DragPlacement.feedbackLift(
+      shapeWidth: shape.width,
+      shapeHeight: shape.height,
+      cellSize: cellSize,
+      gap: _cellGap,
+    );
   }
 
   Point<int>? _originForPointer(Offset globalPosition, Shape shape) {
     final box = _boardKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return null;
 
-    final local = box.globalToLocal(
-      globalPosition + _dragLift(shape, _cellSize),
+    return DragPlacement.originForPointer(
+      globalPointer: globalPosition,
+      boardGlobalTopLeft: box.localToGlobal(Offset.zero),
+      shapeWidth: shape.width,
+      shapeHeight: shape.height,
+      cellSize: _cellSize,
+      gap: _cellGap,
+      boardPadding: _boardPadding,
+      boardSize: Board.size,
     );
-    final stride = _cellSize + _cellGap;
-    final col = ((local.dx - _boardPadding) / stride).floor();
-    final row = ((local.dy - _boardPadding) / stride).floor();
-    return Point(col, row);
   }
 
   @override
@@ -144,14 +159,14 @@ class _GameScreenState extends State<GameScreen> {
     final ads = context.watch<AdService>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121418),
+      backgroundColor: CubexTheme.cream,
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            const _Scoreboard(),
+            const SizedBox(height: 8),
+            const _GameHeader(),
             SizedBox(
-              height: 44,
+              height: 40,
               child: ComboOverlay(
                 epoch: controller.eventSeq,
                 combo: controller.lastCombo,
@@ -160,13 +175,14 @@ class _GameScreenState extends State<GameScreen> {
                 perfect: controller.lastPerfectClear,
               ),
             ),
+            LevelBar(score: controller.score),
             Expanded(
               child: Center(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final boardSide = min(
-                      constraints.maxWidth - 32,
-                      constraints.maxHeight - 24,
+                      constraints.maxWidth - 28,
+                      constraints.maxHeight - 16,
                     ).clamp(240.0, 420.0);
                     final inner =
                         boardSide -
@@ -208,7 +224,7 @@ class _GameScreenState extends State<GameScreen> {
               },
               onDragCanceled: () => controller.endDrag(cancelled: true),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             ads.buildBanner(),
           ],
         ),
@@ -217,37 +233,47 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
-class _Scoreboard extends StatelessWidget {
-  const _Scoreboard();
+class _GameHeader extends StatelessWidget {
+  const _GameHeader();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<GameController>();
+    final canPop = Navigator.of(context).canPop();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
+          _HudIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            onPressed: canPop ? () => Navigator.of(context).pop() : null,
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: _ScoreCard(
+            child: _ScorePill(
               label: 'SCORE',
               value: '${controller.score}',
-              accent: const Color(0xFF4FC3F7),
+              tint: CubexTheme.hudCream,
+              icon: Icons.extension_rounded,
+              iconColor: CubexTheme.peachDeep,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
-            child: _ScoreCard(
+            child: _ScorePill(
               label: 'BEST',
               value: '${controller.bestScore}',
-              accent: const Color(0xFFFFB74D),
+              tint: const Color(0xFFFFD7B8),
+              icon: Icons.emoji_events_rounded,
+              iconColor: CubexTheme.peachDeep,
             ),
           ),
-          const SizedBox(width: 12),
-          IconButton.filledTonal(
+          const SizedBox(width: 8),
+          _HudIconButton(
+            icon: Icons.refresh_rounded,
+            accent: true,
             onPressed: controller.newGame,
-            tooltip: 'New game',
-            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
@@ -255,48 +281,101 @@ class _Scoreboard extends StatelessWidget {
   }
 }
 
-class _ScoreCard extends StatelessWidget {
-  const _ScoreCard({
+class _ScorePill extends StatelessWidget {
+  const _ScorePill({
     required this.label,
     required this.value,
-    required this.accent,
+    required this.tint,
+    required this.icon,
+    required this.iconColor,
   });
 
   final String label;
   final String value;
-  final Color accent;
+  final Color tint;
+  final IconData icon;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2128),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: accent.withValues(alpha: 0.9),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
-            ),
+        color: tint,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: CubexTheme.woodMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: CubexTheme.woodInk,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    height: 1.05,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HudIconButton extends StatelessWidget {
+  const _HudIconButton({
+    required this.icon,
+    this.onPressed,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: accent ? CubexTheme.peachDeep : Colors.white,
+      shape: const CircleBorder(),
+      elevation: 1,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(
+            icon,
+            size: 20,
+            color: accent ? Colors.white : CubexTheme.woodMuted,
+          ),
+        ),
       ),
     );
   }
@@ -324,9 +403,15 @@ class _GameBoard extends StatelessWidget {
       width: side,
       height: side,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2128),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        color: CubexTheme.boardFill,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -346,6 +431,7 @@ class _GameBoard extends StatelessWidget {
                     Point(col, row),
                   ),
                   placeEpoch: controller.eventSeq,
+                  size: cellSize,
                 ),
               ),
           ClearBurst(
@@ -369,6 +455,7 @@ class _BoardCell extends StatelessWidget {
     required this.dragColorId,
     required this.justPlaced,
     required this.placeEpoch,
+    required this.size,
   });
 
   final int? value;
@@ -377,47 +464,57 @@ class _BoardCell extends StatelessWidget {
   final int? dragColorId;
   final bool justPlaced;
   final int placeEpoch;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    Color fill;
+    Widget cell;
     if (value != null) {
-      fill = kBlockColors[value] ?? Colors.blueGrey;
+      cell = ToyBlock(
+        color: kBlockColors[value] ?? Colors.orange,
+        size: size,
+      );
     } else if (highlighted) {
       final base = kBlockColors[dragColorId ?? 1] ?? Colors.lightBlue;
-      fill =
-          hoverValid
-              ? base.withValues(alpha: 0.55)
-              : Colors.redAccent.withValues(alpha: 0.35);
+      cell = Container(
+        decoration: BoxDecoration(
+          color:
+              hoverValid
+                  ? base.withValues(alpha: 0.45)
+                  : Colors.redAccent.withValues(alpha: 0.28),
+          borderRadius: BorderRadius.circular((size * 0.22).clamp(4.0, 10.0)),
+          border: Border.all(
+            color:
+                hoverValid
+                    ? base.withValues(alpha: 0.9)
+                    : Colors.redAccent.withValues(alpha: 0.7),
+            width: 1.4,
+          ),
+        ),
+      );
     } else {
-      fill = const Color(0xFF2A313A);
+      cell = Container(
+        decoration: BoxDecoration(
+          color: CubexTheme.cellEmpty,
+          borderRadius: BorderRadius.circular((size * 0.22).clamp(4.0, 10.0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+      );
     }
-
-    final cell = AnimatedContainer(
-      duration: const Duration(milliseconds: 90),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow:
-            value != null
-                ? [
-                  BoxShadow(
-                    color: fill.withValues(alpha: 0.35),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-                : null,
-      ),
-    );
 
     if (!justPlaced || value == null) return cell;
 
     return TweenAnimationBuilder<double>(
       key: ValueKey('place-$placeEpoch'),
       tween: Tween(begin: 0.72, end: 1),
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOutBack,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.elasticOut,
       builder: (context, scale, child) {
         return Transform.scale(scale: scale, child: child);
       },
@@ -454,25 +551,33 @@ class _ShapeTray extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        height: 118,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        height: 132,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1C2128),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white10),
+          color: CubexTheme.boardFill,
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
           children: List.generate(3, (index) {
             final shape = controller.tray[index];
             return Expanded(
-              child: Center(
-                child:
-                    shape == null
-                        ? const SizedBox.shrink()
-                        : Opacity(
-                          opacity:
-                              controller.canPlaceTrayIndex(index) ? 1 : 0.38,
-                          child: _DraggableShape(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    right:
+                        index < 2
+                            ? const BorderSide(
+                              color: Color(0x33C9966A),
+                              width: 1,
+                            )
+                            : BorderSide.none,
+                  ),
+                ),
+                child: Center(
+                  child:
+                      shape == null
+                          ? const SizedBox.expand()
+                          : _DraggableShape(
                             shape: shape,
                             trayCellSize: trayCellSize,
                             boardCellSize: boardCellSize,
@@ -481,13 +586,15 @@ class _ShapeTray extends StatelessWidget {
                             enabled:
                                 !controller.isGameOver &&
                                 controller.canPlaceTrayIndex(index),
+                            dimmed: !controller.canPlaceTrayIndex(index),
+                            wiggleDelay: Duration(milliseconds: 180 * index),
                             onDragStarted: () => onDragStarted(index),
                             onDragUpdate:
                                 (details) => onDragUpdate(index, details),
                             onDragEnd: onDragEnd,
                             onDragCanceled: onDragCanceled,
                           ),
-                        ),
+                ),
               ),
             );
           }),
@@ -505,6 +612,8 @@ class _DraggableShape extends StatelessWidget {
     required this.boardGap,
     required this.dragLift,
     required this.enabled,
+    required this.dimmed,
+    required this.wiggleDelay,
     required this.onDragStarted,
     required this.onDragUpdate,
     required this.onDragEnd,
@@ -517,6 +626,8 @@ class _DraggableShape extends StatelessWidget {
   final double boardGap;
   final Offset dragLift;
   final bool enabled;
+  final bool dimmed;
+  final Duration wiggleDelay;
   final VoidCallback onDragStarted;
   final GestureDragUpdateCallback onDragUpdate;
   final void Function(DraggableDetails details) onDragEnd;
@@ -524,7 +635,16 @@ class _DraggableShape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _ShapePreview(shape: shape, cellSize: trayCellSize, gap: 2);
+    final preview = IdleWiggle(
+      enabled: enabled,
+      delay: wiggleDelay,
+      child: _ShapePreview(
+        shape: shape,
+        cellSize: trayCellSize,
+        gap: 3,
+        dimmed: dimmed,
+      ),
+    );
 
     return Draggable<Shape>(
       data: shape,
@@ -536,20 +656,24 @@ class _DraggableShape extends StatelessWidget {
       onDraggableCanceled: (_, __) => onDragCanceled(),
       feedback: Material(
         color: Colors.transparent,
-        child: Opacity(
-          opacity: 0.92,
-          child: Transform.translate(
-            offset: dragLift,
-            child: _ShapePreview(
-              shape: shape,
-              cellSize: boardCellSize,
-              gap: boardGap,
-            ),
+        elevation: 0,
+        child: Transform.translate(
+          offset: dragLift,
+          // No scale here — must match DragPlacement.originForPointer exactly.
+          child: _ShapePreview(
+            shape: shape,
+            cellSize: boardCellSize,
+            gap: boardGap,
           ),
         ),
       ),
-      childWhenDragging: Opacity(opacity: 0.2, child: preview),
-      child: preview,
+      childWhenDragging: const SizedBox.expand(),
+      child: SizedBox.expand(
+        child: ColoredBox(
+          color: Colors.transparent,
+          child: Center(child: preview),
+        ),
+      ),
     );
   }
 }
@@ -559,11 +683,13 @@ class _ShapePreview extends StatelessWidget {
     required this.shape,
     required this.cellSize,
     this.gap = 2,
+    this.dimmed = false,
   });
 
   final Shape shape;
   final double cellSize;
   final double gap;
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) {
@@ -580,20 +706,10 @@ class _ShapePreview extends StatelessWidget {
               return Positioned(
                 left: cell.x * (cellSize + gap),
                 top: cell.y * (cellSize + gap),
-                child: Container(
-                  width: cellSize,
-                  height: cellSize,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                child: ToyBlock(
+                  color: color,
+                  size: cellSize,
+                  dimmed: dimmed,
                 ),
               );
             }).toList(),
