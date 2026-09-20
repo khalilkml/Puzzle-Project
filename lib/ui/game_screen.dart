@@ -127,7 +127,7 @@ class _GameScreenState extends State<GameScreen> {
     _gameOverDialogOpen = false;
   }
 
-  /// Lift shared by floating feedback and hover/drop mapping.
+  /// Same [DragPlacement.feedbackLift] used by floating feedback + hover/drop.
   Offset _dragLift(Shape shape, double cellSize) {
     return DragPlacement.feedbackLift(
       shapeWidth: shape.width,
