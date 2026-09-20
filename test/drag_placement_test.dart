@@ -12,7 +12,7 @@ void main() {
   // Board top-left in global space for the test.
   const boardOrigin = Offset(100, 200);
 
-  test('feedbackLift centers width and sits above the finger', () {
+  test('feedbackLift centers on finger with small upward bias', () {
     final lift = DragPlacement.feedbackLift(
       shapeWidth: 2,
       shapeHeight: 3,
@@ -24,7 +24,10 @@ void main() {
     final stride = cellSize + gap;
 
     expect(lift.dx, closeTo(-width / 2, 0.001));
-    expect(lift.dy, closeTo(-height - stride * DragPlacement.liftCells, 0.001));
+    expect(
+      lift.dy,
+      closeTo(-height / 2 - stride * DragPlacement.liftCells, 0.001),
+    );
   });
 
   test('originForPointer uses the same lift as feedback (tall piece)', () {
